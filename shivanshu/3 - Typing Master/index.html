@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="TYPE//TANK - High-intensity retro terminal typing defense game. Defend the perimeter with precision keyboard artillery.">
+  <title>TYPE//TANK // MILITARY TERMINAL TYPING DEFENSE</title>
+  <!-- Google Fonts with fallback stack -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Ambient CRT filter layer containing the simulated physical monitor -->
+  <div id="crt-overlay" class="crt-active">
+    <div id="scanlines"></div>
+    <div id="vignette"></div>
+    <div id="bezel-glow"></div>
+
+    <!-- Main aspect ratio cabinet constrained by JS --cab-w and --cab-h -->
+    <div id="cabinet">
+      <!-- Header Marquee: Always visible, compact single row -->
+      <header id="header-marquee" role="banner">
+        <div class="marquee-left">
+          <span class="brand-title">TYPE//TANK</span>
+          <span class="separator">::</span>
+          <span class="operator-badge">OPERATOR: <span id="marquee-callsign" class="highlight-callsign">UNKNOWN</span></span>
+        </div>
+        <div class="marquee-controls">
+          <button type="button" id="btn-toggle-crt" class="term-btn marquee-btn" aria-label="Toggle CRT visual effects" data-shortcut="C">[CRT:ON]</button>
+          <button type="button" id="btn-toggle-sfx" class="term-btn marquee-btn" aria-label="Toggle sound effects" data-shortcut="M">[SFX:ON]</button>
+          <button type="button" id="btn-toggle-aspect" class="term-btn marquee-btn" aria-label="Toggle display aspect ratio">[ASPECT:AUTO]</button>
+          <button type="button" id="btn-switch-callsign" class="term-btn marquee-btn" aria-label="Switch operator callsign">[SWITCH CALLSIGN]</button>
+        </div>
+      </header>
+
+      <!-- Main viewports container -->
+      <main id="terminal-viewport">
+        <!-- 1. LOGIN SCREEN -->
+        <section id="screen-login" class="term-screen active" aria-labelledby="login-heading">
+          <div class="screen-wrapper">
+            <div class="ascii-panel login-panel">
+              <div class="panel-header">+---[ TERMINAL AUTHENTICATION ]---+</div>
+              <div class="panel-content">
+                <div id="boot-log" class="terminal-text boot-sequence" aria-live="polite">
+                  <div class="log-line">> AGY-OS V4.86 INITIALIZING HARDWARE... OK</div>
+                  <div class="log-line">> CALIBRATING DUAL-PHASIC TURRET SERVO... OK</div>
+                  <div class="log-line">> RADAR TELEMETRY LINK ESTABLISHED.</div>
+                </div>
+                <div class="auth-box">
+                  <h1 id="login-heading" class="visually-hidden">Operator Login</h1>
+                  <label for="input-callsign" class="prompt-label">CALLSIGN&gt;</label>
+                  <div class="input-container">
+                    <input type="text" id="input-callsign" class="term-input" maxlength="12" autocomplete="off" spellcheck="false" placeholder="OPERATOR" autofocus aria-describedby="login-error">
+                    <span class="blinking-block-cursor"></span>
+                  </div>
+                  <div id="login-error" class="error-msg" role="alert"></div>
+                </div>
+                <div class="auth-actions">
+                  <button type="button" id="btn-login-submit" class="term-btn primary-btn">[CONFIRM CALLSIGN [ENTER]]</button>
+                </div>
+                <div class="panel-footer-note">PERMITTED: 3-12 CHARACTERS (A-Z, 0-9, _, -)</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. SETTINGS SCREEN -->
+        <section id="screen-settings" class="term-screen" aria-labelledby="settings-heading">
+          <div class="screen-wrapper">
+            <div class="ascii-panel settings-panel">
+              <div class="panel-header">+---[ ARSENAL &amp; SYSTEM CONFIG ]---+</div>
+              <div class="panel-content">
+                <h1 id="settings-heading" class="visually-hidden">Arsenal and System Configuration</h1>
+                
+                <!-- Arsenal Mode Selection Quad -->
+                <div class="config-section">
+                  <div class="section-title">&gt; SELECT ENGAGEMENT PROTOCOL:</div>
+                  <div class="mode-grid" role="radiogroup" aria-label="Arsenal difficulty mode">
+                    <button type="button" class="mode-card" data-mode="1" role="radio" aria-checked="true" id="mode-card-1">
+                      <div class="mode-card-header">MODE 1 // ALPHA</div>
+                      <div class="mode-card-charset">LOWERCASE ONLY</div>
+                      <div class="mode-card-sample">tank, radar, armor</div>
+                    </button>
+                    <button type="button" class="mode-card" data-mode="2" role="radio" aria-checked="false" id="mode-card-2">
+                      <div class="mode-card-header">MODE 2 // BRAVO</div>
+                      <div class="mode-card-charset">+ UPPERCASE</div>
+                      <div class="mode-card-sample">Tank, RadarX, Delta</div>
+                    </button>
+                    <button type="button" class="mode-card" data-mode="3" role="radio" aria-checked="false" id="mode-card-3">
+                      <div class="mode-card-header">MODE 3 // CHARLIE</div>
+                      <div class="mode-card-charset">+ NUMBERS</div>
+                      <div class="mode-card-sample">Squad5, Tank99, B52</div>
+                    </button>
+                    <button type="button" class="mode-card" data-mode="4" role="radio" aria-checked="false" id="mode-card-4">
+                      <div class="mode-card-header">MODE 4 // DELTA</div>
+                      <div class="mode-card-charset">+ SPECIALS</div>
+                      <div class="mode-card-sample">[tank-01], (8+9), !alert!</div>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Cumulative Character Matrix Toggles -->
+                <div class="config-section">
+                  <div class="section-title">&gt; MUNITIONS MATRIX (CUMULATIVE):</div>
+                  <div class="toggle-chips-row">
+                    <button type="button" id="toggle-lowercase" class="chip-toggle locked-active" disabled aria-pressed="true">[LOWERCASE: LOCKED ON]</button>
+                    <button type="button" id="toggle-uppercase" class="chip-toggle" aria-pressed="false">[UPPERCASE]</button>
+                    <button type="button" id="toggle-numbers" class="chip-toggle" aria-pressed="false">[NUMBERS]</button>
+                    <button type="button" id="toggle-specials" class="chip-toggle" aria-pressed="false">[SPECIALS]</button>
+                  </div>
+                </div>
+
+                <!-- Cabinet Display Aspect Ratio Toggles -->
+                <div class="config-section">
+                  <div class="section-title">&gt; OPTICAL ASPECT RATIO:</div>
+                  <div class="aspect-chips-row" role="radiogroup" aria-label="Aspect ratio selection">
+                    <button type="button" class="chip-aspect" data-aspect="auto" role="radio" aria-checked="true" id="aspect-opt-auto">[AUTO // SCREEN FIT]</button>
+                    <button type="button" class="chip-aspect" data-aspect="16:9" role="radio" aria-checked="false" id="aspect-opt-169">[16:9 // WIDESCREEN]</button>
+                    <button type="button" class="chip-aspect" data-aspect="4:3" role="radio" aria-checked="false" id="aspect-opt-43">[4:3 // CLASSIC CRT]</button>
+                  </div>
+                </div>
+
+                <!-- Dynamic Live Words Preview Bar -->
+                <div class="config-section">
+                  <div class="section-title">&gt; RADAR SIGNATURE SAMPLES:</div>
+                  <div id="arsenal-preview-bar" class="preview-bar" aria-live="polite">
+                    <!-- Populated dynamically with 6 sample words -->
+                  </div>
+                </div>
+
+                <!-- Navigation Action Row -->
+                <div class="settings-actions">
+                  <button type="button" id="btn-settings-records" class="term-btn secondary-btn">[RECORDS FLIGHT LOG [R]]</button>
+                  <button type="button" id="btn-settings-proceed" class="term-btn primary-btn">[PROCEED TO BRIEFING [ENTER]]</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. BRIEFING SCREEN -->
+        <section id="screen-briefing" class="term-screen" aria-labelledby="briefing-heading">
+          <div class="screen-wrapper">
+            <div class="ascii-panel briefing-panel">
+              <div class="panel-header">+---[ SORTIE TACTICAL DIRECTIVE ]---+</div>
+              <div class="panel-content">
+                <h1 id="briefing-heading" class="visually-hidden">Sortie Tactical Directive</h1>
+                <div class="directives-grid">
+                  <div class="directive-card">
+                    <div class="directive-num">01 // HOSTILE DESCENT</div>
+                    <div class="directive-body">Hostiles fall from the upper perimeter. Intercept and neutralize before impact.</div>
+                  </div>
+                  <div class="directive-card">
+                    <div class="directive-num">02 // RADAR LOCK-ON</div>
+                    <div class="directive-body">Type the first letter to engage. Lowest hostile target is prioritized. Lock holds until eliminated.</div>
+                  </div>
+                  <div class="directive-card">
+                    <div class="directive-num">03 // ARTILLERY FIRE</div>
+                    <div class="directive-body">Each correct keystroke launches a homing shell. Completed letters dim; remaining letters shine bright.</div>
+                  </div>
+                  <div class="directive-card">
+                    <div class="directive-num">04 // FIRING DISCIPLINE</div>
+                    <div class="directive-body">Errant keystrokes shatter your combo multiplier and compromise sortie accuracy rating.</div>
+                  </div>
+                  <div class="directive-card bonus-card">
+                    <div class="directive-num">05 // CRIMSON THREATS</div>
+                    <div class="directive-body">Priority crimson targets fall at extreme velocity. Neutralizing awards a 3.5x bounty!</div>
+                  </div>
+                  <div class="directive-card warning-card">
+                    <div class="directive-num">06 // HULL INTEGRITY</div>
+                    <div class="directive-body">Perimeter breaches inflict -20% hull damage (-30% crimson). Zero hull integrity terminates sortie.</div>
+                  </div>
+                  <div class="directive-card span-two-cols">
+                    <div class="directive-num">07 // EMERGENCY CONTROLS</div>
+                    <div class="directive-body">[ESC] triggers Tactical Pause / Abort menu. [BACKSPACE] instantly disengages current radar lock.</div>
+                  </div>
+                </div>
+
+                <div class="briefing-footer">
+                  <button type="button" id="btn-engage-combat" class="term-btn engage-btn pulse-glow">
+                    PRESS SPACE OR ENTER TO ENGAGE
+                  </button>
+                  <div class="briefing-subtext">OR TAP BUTTON TO INITIALIZE TARGETING RADAR</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. GAME PLAYING SCREEN -->
+        <section id="screen-game" class="term-screen" aria-labelledby="hud-status-line">
+          <div class="game-layout">
+            <!-- HUD: Single compact DOM row above canvas -->
+            <div id="game-hud" class="terminal-hud" role="region" aria-label="Sortie Telemetry HUD">
+              <span id="hud-status-line" class="visually-hidden">Live Sortie Telemetry</span>
+              <div class="hud-item"><span class="hud-lbl">OP:</span> <span id="hud-op" class="hud-val">GHOST</span></div>
+              <div class="hud-sep">│</div>
+              <div class="hud-item"><span class="hud-lbl">MODE:</span> <span id="hud-mode" class="hud-val">1 ALPHA</span></div>
+              <div class="hud-sep">│</div>
+              <div class="hud-item"><span class="hud-lbl">SCORE:</span> <span id="hud-score" class="hud-val">000000</span></div>
+              <div class="hud-sep">│</div>
+              <div class="hud-item"><span class="hud-lbl">COMBO:</span> <span id="hud-combo" class="hud-val">×1.0</span></div>
+              <div class="hud-sep">│</div>
+              <div class="hud-item"><span class="hud-lbl">WPM:</span> <span id="hud-wpm" class="hud-val">--</span></div>
+              <div class="hud-sep">│</div>
+              <div class="hud-item"><span class="hud-lbl">ACC:</span> <span id="hud-acc" class="hud-val">100.0%</span></div>
+              <div class="hud-sep">│</div>
+              <div class="hud-item"><span class="hud-lbl">LVL:</span> <span id="hud-lvl" class="hud-val">1</span></div>
+              <div class="hud-sep">│</div>
+              <div class="hud-item hull-container">
+                <span class="hud-lbl">HULL:</span>
+                <span id="hud-hull-bar" class="hud-hull-graphic">[██████████]</span>
+                <span id="hud-hull-pct" class="hud-val">100%</span>
+              </div>
+            </div>
+
+            <!-- Canvas Arena Container -->
+            <div id="canvas-container">
+              <canvas id="game-canvas"></canvas>
+
+              <!-- In-game Overlays -->
+              <div id="threat-banner" class="game-overlay-banner" aria-live="assertive"></div>
+              <div id="crimson-alert-banner" class="game-overlay-banner crimson-alert" aria-live="assertive">!! PRIORITY TARGET !!</div>
+              
+              <div id="countdown-overlay" class="game-modal-overlay">
+                <div id="countdown-number" class="countdown-display">3</div>
+              </div>
+
+              <!-- Pause / Abort Overlay -->
+              <div id="pause-overlay" class="game-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="pause-title">
+                <div class="ascii-panel pause-panel">
+                  <div class="panel-header">+---[ SORTIE PAUSED ]---+</div>
+                  <div class="panel-content">
+                    <h2 id="pause-title" class="pause-title">TACTICAL SUSPENSION ACTIVE</h2>
+                    <div class="pause-options">
+                      <button type="button" id="btn-pause-resume" class="term-btn primary-btn">[ENTER] RESUME SORTIE</button>
+                      <button type="button" id="btn-pause-mute" class="term-btn marquee-btn">[M] TOGGLE AUDIO</button>
+                      <button type="button" id="btn-pause-abort" class="term-btn danger-btn">[ESC] ABORT MISSION</button>
+                    </div>
+                    <div class="pause-warning">NOTE: ABORTED SORTIES DO NOT QUALIFY FOR PERSONAL BESTS</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. DEBRIEF SCREEN -->
+        <section id="screen-debrief" class="term-screen" aria-labelledby="debrief-heading">
+          <canvas id="confetti-canvas"></canvas>
+          <div class="screen-wrapper">
+            <div class="ascii-panel debrief-panel">
+              <div class="panel-header">+---[ SORTIE AFTER-ACTION REPORT ]---+</div>
+              <div class="panel-content">
+                <h1 id="debrief-heading" class="visually-hidden">Sortie After-Action Report</h1>
+                
+                <!-- Status outcome line -->
+                <div id="debrief-status" class="debrief-status-banner">SORTIE COMPLETE — HULL DESTROYED</div>
+
+                <!-- Personal Record Banner -->
+                <div id="debrief-pb-banner" class="pb-banner hidden">
+                  ★ NEW PERSONAL RECORD DETECTED! ★
+                </div>
+                <div id="debrief-pb-delta" class="pb-delta-line"></div>
+
+                <!-- 3x2 Metrics Grid -->
+                <div class="metrics-grid">
+                  <div class="metric-card">
+                    <div class="metric-label">FINAL SCORE</div>
+                    <div id="metric-score" class="metric-value">000000</div>
+                  </div>
+                  <div class="metric-card">
+                    <div class="metric-label">AVERAGE WPM</div>
+                    <div id="metric-wpm" class="metric-value">0</div>
+                  </div>
+                  <div class="metric-card">
+                    <div class="metric-label">ACCURACY RATING</div>
+                    <div id="metric-accuracy" class="metric-value">0.0%</div>
+                  </div>
+                  <div class="metric-card">
+                    <div class="metric-label">HOSTILES DESTROYED</div>
+                    <div id="metric-words" class="metric-value">0</div>
+                  </div>
+                  <div class="metric-card">
+                    <div class="metric-label">MAX COMBO STREAK</div>
+                    <div id="metric-combo" class="metric-value">0</div>
+                  </div>
+                  <div class="metric-card">
+                    <div class="metric-label">PROTOCOL ENGAGED</div>
+                    <div id="metric-mode" class="metric-value">MODE 1 ALPHA</div>
+                  </div>
+                </div>
+
+                <!-- Action Controls -->
+                <div class="debrief-actions">
+                  <button type="button" id="btn-debrief-reengage" class="term-btn primary-btn">[RE-ENGAGE SORTIE [ENTER / SPACE]]</button>
+                  <button type="button" id="btn-debrief-records" class="term-btn secondary-btn">[FLIGHT LOG [R]]</button>
+                  <button type="button" id="btn-debrief-settings" class="term-btn secondary-btn">[ARSENAL CONFIG [S]]</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. RECORDS / FLIGHT LOG SCREEN -->
+        <section id="screen-records" class="term-screen" aria-labelledby="records-heading">
+          <div class="screen-wrapper">
+            <div class="ascii-panel records-panel">
+              <div class="panel-header">+---[ OPERATOR FLIGHT LOG ]---+</div>
+              <div class="panel-content">
+                <h1 id="records-heading" class="visually-hidden">Operator Flight Log</h1>
+
+                <!-- Lifetime Overview Stats Bar -->
+                <div class="records-overview-bar">
+                  <div class="overview-stat"><span class="stat-lbl">PEAK SCORE:</span> <span id="stat-peak-score" class="stat-val">0</span></div>
+                  <div class="overview-stat"><span class="stat-lbl">MAX WPM:</span> <span id="stat-max-wpm" class="stat-val">0</span></div>
+                  <div class="overview-stat"><span class="stat-lbl">PEAK ACC:</span> <span id="stat-peak-acc" class="stat-val">0.0%</span></div>
+                  <div class="overview-stat"><span class="stat-lbl">TOTAL KILLS:</span> <span id="stat-total-kills" class="stat-val">0</span></div>
+                  <div class="overview-stat"><span class="stat-lbl">SORTIES:</span> <span id="stat-total-sorties" class="stat-val">0</span></div>
+                </div>
+
+                <!-- Mode Bests Quad -->
+                <div class="mode-bests-quad">
+                  <div class="best-card" id="best-card-1">
+                    <div class="best-card-title">M1 ALPHA BEST</div>
+                    <div class="best-card-score" id="best-score-1">— NO DATA —</div>
+                    <div class="best-card-wpm" id="best-wpm-1"></div>
+                  </div>
+                  <div class="best-card" id="best-card-2">
+                    <div class="best-card-title">M2 BRAVO BEST</div>
+                    <div class="best-card-score" id="best-score-2">— NO DATA —</div>
+                    <div class="best-card-wpm" id="best-wpm-2"></div>
+                  </div>
+                  <div class="best-card" id="best-card-3">
+                    <div class="best-card-title">M3 CHARLIE BEST</div>
+                    <div class="best-card-score" id="best-score-3">— NO DATA —</div>
+                    <div class="best-card-wpm" id="best-wpm-3"></div>
+                  </div>
+                  <div class="best-card" id="best-card-4">
+                    <div class="best-card-title">M4 DELTA BEST</div>
+                    <div class="best-card-score" id="best-score-4">— NO DATA —</div>
+                    <div class="best-card-wpm" id="best-wpm-4"></div>
+                  </div>
+                </div>
+
+                <!-- Filter Chips Row -->
+                <div class="records-filter-row" role="radiogroup" aria-label="Sortie log filter">
+                  <span class="filter-label">&gt; FILTER PROTOCOL:</span>
+                  <button type="button" class="filter-chip active" data-filter="all" role="radio" aria-checked="true">[ALL (0)]</button>
+                  <button type="button" class="filter-chip" data-filter="1" role="radio" aria-checked="false">[M1 ALPHA (1)]</button>
+                  <button type="button" class="filter-chip" data-filter="2" role="radio" aria-checked="false">[M2 BRAVO (2)]</button>
+                  <button type="button" class="filter-chip" data-filter="3" role="radio" aria-checked="false">[M3 CHARLIE (3)]</button>
+                  <button type="button" class="filter-chip" data-filter="4" role="radio" aria-checked="false">[M4 DELTA (4)]</button>
+                </div>
+
+                <!-- Scrollable Table Container -->
+                <div class="records-table-container">
+                  <table class="flight-log-table" aria-label="Sortie History Log">
+                    <thead>
+                      <tr>
+                        <th>TIMESTAMP</th>
+                        <th>MODE</th>
+                        <th>SCORE</th>
+                        <th>WPM</th>
+                        <th>ACCURACY</th>
+                        <th>MAX COMBO</th>
+                        <th>STATUS</th>
+                      </tr>
+                    </thead>
+                    <tbody id="flight-log-tbody">
+                      <!-- Dynamic sortie history rows -->
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Records Bottom Actions -->
+                <div class="records-actions">
+                  <button type="button" id="btn-records-back" class="term-btn secondary-btn">[BACK [ESC / BACKSPACE]]</button>
+                  <button type="button" id="btn-records-purge" class="term-btn danger-btn">[PURGE LOGS]</button>
+                  <button type="button" id="btn-records-engage" class="term-btn primary-btn">[NEW SORTIE [ENTER]]</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Purge Confirmation Modal -->
+          <div id="purge-modal" class="game-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="purge-title">
+            <div class="ascii-panel purge-panel">
+              <div class="panel-header warning-header">+---[ CAUTION: PURGE CONFIRMATION ]---+</div>
+              <div class="panel-content">
+                <h2 id="purge-title" class="purge-title">CONFIRM CALLSIGN LOG EXPUNGEMENT</h2>
+                <p class="purge-warning">THIS ACTION IRREVOCABLY ERASES ALL MISSION LOGS &amp; BESTS FOR OPERATOR <span id="purge-target-callsign" class="highlight-callsign"></span>.</p>
+                <div class="purge-input-block">
+                  <label for="input-purge-confirm" class="prompt-label">TYPE PURGE TO CONFIRM&gt;</label>
+                  <input type="text" id="input-purge-confirm" class="term-input" maxlength="5" autocomplete="off" spellcheck="false" placeholder="PURGE">
+                </div>
+                <div class="purge-actions">
+                  <button type="button" id="btn-cancel-purge" class="term-btn secondary-btn">[CANCEL [ESC]]</button>
+                  <button type="button" id="btn-confirm-purge" class="term-btn danger-btn">[EXECUTE PURGE]</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- Plain script tags in strict dependency order (file:// compatible) -->
+  <script src="js/words.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
