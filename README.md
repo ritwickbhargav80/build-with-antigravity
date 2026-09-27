@@ -127,12 +127,15 @@ Example prompt style:
 
 Official Google Antigravity resources referenced during the session:
 
-- [Get Started with Google Antigravity](<!-- Add URL here -->)
-- [Getting Started with Google Antigravity](<!-- Add URL here -->)
-- [Authoring Google Antigravity Skills](<!-- Add URL here -->)
-- [Hands-on with Antigravity CLI](<!-- Add URL here -->)
-- [Build and Deploy to Google Cloud with Antigravity](<!-- Add URL here -->)
-- [Credits](<!-- Add URL here -->)
+- [Get Started with Google Antigravity](https://www.skills.google/focuses/163036?catalog_rank=%7B%22rank%22%3A517%2C%22num_filters%22%3A0%2C%22has_search%22%3Afalse%7D&locale=en&parent=catalog&qlcampaign=5k-dodl-65)
+- [Getting Started with Google Antigravity](https://codelabs.developers.google.com/getting-started-google-antigravity#0)
+- [Authoring Google Antigravity Skills](https://codelabs.developers.google.com/getting-started-with-antigravity-skills#0)
+- [Hands-on with Antigravity CLI](https://codelabs.developers.google.com/antigravity-cli-hands-on#0)
+- [Build and Deploy to Google Cloud with Antigravity](https://codelabs.developers.google.com/build-and-deploy-gcp-with-antigravity#0)
+
+**For Credits:**
+- [Google Enterprise Agent Ready](https://developers.google.com/program/gear)
+- [Google Skills Subscriptions](https://www.skills.google/subscriptions)
 
 ---
 
