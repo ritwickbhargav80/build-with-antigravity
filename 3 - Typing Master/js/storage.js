@@ -130,7 +130,7 @@ class StorageEngine {
     // If new record, remove old 'isPersonalBest' tag from previous entries of same mode/callsign
     if (isNewRecord) {
       logs.forEach(l => {
-        if (l.mode === mode && l.callsign.toUpperCase() === callsign) {
+        if (l.mode === mode && (l.callsign || "").toUpperCase() === callsign) {
           l.isPersonalBest = false;
         }
       });

@@ -127,22 +127,28 @@ body.crt-active {
   border: 6px solid #132b18;
 }
 
-/* Side Bezels for 16:9 / 4:3 Arcade Cabinet Feel */
+/* Side Bezels for 16:9 / 4:3 Arcade Cabinet Feel - Inset inside cabinet with padding to avoid overlapping screen content */
+.arcade-cabinet.aspect-16-9,
+.arcade-cabinet.aspect-4-3 {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
 .bezel-left, .bezel-right {
   display: none;
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 18px;
+  width: 12px;
   background: repeating-linear-gradient(
     45deg,
     #0c1a0f,
-    #0c1a0f 8px,
-    #071109 8px,
-    #071109 16px
+    #0c1a0f 6px,
+    #071109 6px,
+    #071109 12px
   );
-  border-right: 1px solid #1b3820;
   z-index: 100;
+  pointer-events: none;
 }
 .bezel-left { left: 0; border-right: 1px solid #1b3820; }
 .bezel-right { right: 0; border-left: 1px solid #1b3820; }
@@ -176,17 +182,32 @@ body.crt-active {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 12px;
+  padding: 0 10px;
   font-size: 11px;
   letter-spacing: 0.5px;
   box-shadow: 0 2px 8px rgba(0, 255, 102, 0.1);
   z-index: 50;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.marquee-header::-webkit-scrollbar {
+  display: none;
 }
 
 .marquee-left, .marquee-center, .marquee-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.header-tank-icon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  filter: drop-shadow(0 0 6px rgba(51, 255, 51, 0.6));
+  vertical-align: middle;
 }
 
 .game-title {
@@ -323,10 +344,11 @@ body.crt-active {
   transition: opacity 0.15s ease-in-out;
 }
 
-.screen.hidden {
+.screen.hidden,
+.hidden {
   display: none !important;
-  opacity: 0;
-  pointer-events: none;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 .screen-content {
@@ -413,6 +435,7 @@ body.crt-active {
   display: flex;
   align-items: center;
   position: relative;
+  overflow: hidden;
 }
 
 .arcade-input {
@@ -420,21 +443,66 @@ body.crt-active {
   background: transparent;
   border: none;
   outline: none;
+  padding: 0;
+  margin: 0;
   color: #ffffff;
   font-family: var(--font-mono);
   font-size: 18px;
+  line-height: 1.2;
   letter-spacing: 2px;
   text-transform: uppercase;
+  caret-color: transparent;
 }
 
-.block-cursor {
-  color: var(--phos-green);
-  animation: cursor-blink 0.8s infinite steps(1);
+/* Retro Terminal Block / Solid Bar Cursor */
+.typing-cursor-line {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  left: 0;
+  width: 9px;
+  height: 20px;
+  background-color: var(--phos-green);
+  box-shadow: 0 0 8px var(--phos-green), 0 0 14px var(--phos-green-glow);
+  pointer-events: none;
+  animation: cursor-line-blink 0.8s infinite steps(1);
+  will-change: left, opacity;
+  border-radius: 1px;
 }
 
-@keyframes cursor-blink {
+@keyframes cursor-line-blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
+}
+
+.typing-cursor-line.typing-active {
+  animation: none;
+  opacity: 1;
+}
+
+.typing-cursor-line.blurred {
+  opacity: 0.35;
+  animation: none;
+}
+
+/* Off-screen mirror element for sub-pixel accurate cursor tracking */
+.callsign-mirror {
+  position: absolute;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+  height: 0;
+  overflow: hidden;
+  white-space: pre;
+  font-family: var(--font-mono);
+  font-size: 18px;
+  line-height: 1.2;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 0;
+  margin: 0;
+  pointer-events: none;
+  border: none;
 }
 
 .login-actions {
@@ -723,12 +791,18 @@ body.crt-active {
   padding: 0 10px;
   font-size: 11px;
   z-index: 20;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.arena-hud::-webkit-scrollbar {
+  display: none;
 }
 
 .hud-item {
   display: flex;
   align-items: center;
   gap: 5px;
+  flex-shrink: 0;
 }
 
 .hud-label {
@@ -1035,9 +1109,20 @@ body.crt-active {
   font-size: 9px;
   background-color: var(--phos-red);
   color: #ffffff;
-  padding: 1px 4px;
-  margin-left: 4px;
+  padding: 1px 5px;
+  margin-left: 6px;
   border-radius: 2px;
+  letter-spacing: 0.5px;
+  font-weight: normal;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.badge-pb.overall-pb {
+  background-color: #ffb000;
+  color: #040d06;
+  font-weight: bold;
+  box-shadow: 0 0 8px rgba(255, 176, 0, 0.6);
 }
 
 .mode-badge {

@@ -3,14 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TYPE//TANK // Retro DOS Ballistic Typing Combat</title>
-  <meta name="description" content="Authentic retro DOS/arcade ballistic typing defense simulator. Neutralize falling threats with a 180-degree rotating tank cannon.">
+  <title>Type Tank - Typing Master Defense</title>
+  <meta name="description" content="Engaging ballistic typing defense combat simulator. Neutralize falling threats with a 180-degree rotating tank cannon.">
   
   <!-- Retro Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
   
+  <!-- Custom Favicon -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="shortcut icon" href="favicon.svg">
+
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="crt-active">
@@ -29,6 +33,7 @@
       <!-- Universal Marquee Header HUD -->
       <header id="marquee-header" class="marquee-header">
         <div class="marquee-left">
+          <img src="favicon.svg" alt="TYPE//TANK Logo" class="header-tank-icon" width="22" height="22">
           <span class="game-title">TYPE//TANK</span>
           <span class="version-tag">v2.4</span>
           <span class="status-indicator"><span class="blink-dot">●</span> ONLINE</span>
@@ -70,8 +75,9 @@
                 <div class="input-line">
                   <span class="input-prefix">CALLSIGN&gt;</span>
                   <div class="input-wrapper">
-                    <input type="text" id="callsign-input" class="arcade-input" maxlength="14" spellcheck="false" autocomplete="off" placeholder="CALLSIGN">
-                    <span class="block-cursor">█</span>
+                    <input type="text" id="callsign-input" class="arcade-input" maxlength="14" spellcheck="false" autocomplete="off" placeholder="">
+                    <span id="callsign-cursor" class="typing-cursor-line" aria-hidden="true"></span>
+                    <span id="callsign-mirror" class="callsign-mirror" aria-hidden="true"></span>
                   </div>
                 </div>
 
@@ -120,8 +126,8 @@
               <div class="mode-card" data-mode="4">
                 <div class="mode-tag">[ MODE 4 ]</div>
                 <div class="mode-name">DELTA // SPECIAL SYMBOLS</div>
-                <div class="mode-desc">Maximum cyber threat matrix. Brackets, operators, symbols.</div>
-                <div class="mode-sample">[tank-01] • {cmd-9} • !alert!</div>
+                <div class="mode-desc">Maximum cyber threat matrix. Capitals, brackets, operators, symbols.</div>
+                <div class="mode-sample">[Tank-01] • {CMD-9} • !Alert!</div>
               </div>
             </div>
 
@@ -197,9 +203,9 @@
                 </div>
 
                 <div class="briefing-card">
-                  <div class="briefing-title">[02] LOWEST-FIRST TURRET TARGETING</div>
+                  <div class="briefing-title">[02] TURRET TARGETING &amp; INTELLIGENT SWITCH</div>
                   <div class="briefing-desc">
-                    Type characters to fire. If multiple on-screen words share the same initial letter, the 180° cannon <strong>automatically locks onto the lowest / bottom-most word first</strong>. Tank stays locked until that word is destroyed.
+                    Each incoming word features a <strong>unique starting character</strong> so your target is always unmistakable. If you ever want to re-aim, seamlessly switch targets anytime by typing another word's prefix or starting letter.
                   </div>
                 </div>
 

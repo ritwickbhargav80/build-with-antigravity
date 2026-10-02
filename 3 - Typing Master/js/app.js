@@ -25,6 +25,8 @@
 
   // Login Screen elements
   const loginInput = document.getElementById("callsign-input");
+  const callsignCursor = document.getElementById("callsign-cursor");
+  const callsignMirror = document.getElementById("callsign-mirror");
   const btnLoginSubmit = document.getElementById("btn-login-submit");
 
   // Settings Screen elements
@@ -90,10 +92,38 @@
   let activeFilterMode = "ALL";
   let gameInstance = null;
   let confettiAnimationId = null;
+  let typingActiveTimer = null;
 
   // Initialize Audio & Storage
   const storage = window.storageEngine;
   const audio = window.soundEngine;
+
+  // Callsign Typing Cursor Real-time Tracker
+  function updateCallsignCursor(isTyping = false) {
+    if (!loginInput || !callsignCursor || !callsignMirror) return;
+    const val = loginInput.value || "";
+    let pos = val.length;
+    if (document.activeElement === loginInput && typeof loginInput.selectionStart === "number") {
+      pos = (loginInput.selectionStart !== loginInput.selectionEnd)
+        ? loginInput.selectionEnd
+        : loginInput.selectionStart;
+    }
+    const textBefore = val.slice(0, pos);
+    callsignMirror.textContent = textBefore.replace(/ /g, "\u00a0");
+
+    const textWidth = callsignMirror.getBoundingClientRect().width;
+    callsignCursor.style.left = `${textWidth}px`;
+
+    if (isTyping) {
+      callsignCursor.classList.add("typing-active");
+      clearTimeout(typingActiveTimer);
+      typingActiveTimer = setTimeout(() => {
+        if (callsignCursor) {
+          callsignCursor.classList.remove("typing-active");
+        }
+      }, 400);
+    }
+  }
 
   // 1. Initial State Load
   function initApp() {
@@ -101,6 +131,7 @@
     const savedCallsign = storage.getCallsign();
     marqueeCallsign.textContent = savedCallsign;
     loginInput.value = savedCallsign;
+    updateCallsignCursor();
 
     // Aspect Ratio
     const savedAspect = storage.getAspectRatio();
@@ -237,6 +268,7 @@
     if (screenKey === "login") {
       loginInput.focus();
       loginInput.select();
+      updateCallsignCursor();
     } else if (screenKey === "settings") {
       updateSampleWordsMarquee();
     } else if (screenKey === "game") {
@@ -452,13 +484,40 @@
   }
 
   function renderLogsTable() {
-    const logs = storage.getFlightLogs();
+    const currentCallsign = (storage.getCallsign() || "").toUpperCase();
+    const allLogs = storage.getFlightLogs();
     logsTableBody.innerHTML = "";
 
-    const filtered = logs.filter(l => {
+    // 1. Scope flight logs to the active operator
+    const operatorLogs = allLogs.filter(l => (l.callsign || "").toUpperCase() === currentCallsign);
+
+    // 2. Determine the single highest score (Overall Personal Best) for this operator
+    let overallBestLog = null;
+    let highestScore = 0;
+    operatorLogs.forEach(l => {
+      if (l.score > highestScore) {
+        highestScore = l.score;
+        overallBestLog = l;
+      }
+    });
+
+    // 3. Filter by selected mode chip
+    const filtered = operatorLogs.filter(l => {
       if (activeFilterMode === "ALL") return true;
       return l.mode === parseInt(activeFilterMode, 10);
     });
+
+    // 4. If a specific mode filter is active, find the best score within that mode
+    let modeBestLog = null;
+    if (activeFilterMode !== "ALL") {
+      let highestModeScore = 0;
+      filtered.forEach(l => {
+        if (l.score > highestModeScore) {
+          highestModeScore = l.score;
+          modeBestLog = l;
+        }
+      });
+    }
 
     if (filtered.length === 0) {
       const row = document.createElement("tr");
@@ -469,7 +528,20 @@
 
     filtered.forEach(log => {
       const row = document.createElement("tr");
-      const pbBadge = log.isPersonalBest ? `<span class="badge-pb">★ PB</span>` : "";
+      let pbBadge = "";
+
+      if (activeFilterMode === "ALL") {
+        // In ALL MODES view: ONLY show the single Overall Personal Best across all modes
+        if (overallBestLog && log.id === overallBestLog.id && log.score > 0) {
+          pbBadge = `<span class="badge-pb overall-pb">★ OVERALL PB</span>`;
+        }
+      } else {
+        // When shifted to each mode separately: ONLY show that specific mode's Personal Best as simple "★ PB"
+        if (modeBestLog && log.id === modeBestLog.id && log.score > 0) {
+          pbBadge = `<span class="badge-pb">★ PB</span>`;
+        }
+      }
+
       row.innerHTML = `
         <td>${log.dateStr}</td>
         <td><span class="mode-badge">M-${log.mode}</span></td>
@@ -499,11 +571,52 @@
       confirmCallsign();
     });
 
+    loginInput.addEventListener("input", () => {
+      updateCallsignCursor(true);
+    });
+
     loginInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         confirmCallsign();
+      } else {
+        setTimeout(() => updateCallsignCursor(true), 0);
       }
     });
+
+    loginInput.addEventListener("keyup", () => {
+      updateCallsignCursor(false);
+    });
+
+    loginInput.addEventListener("click", () => {
+      updateCallsignCursor(false);
+    });
+
+    loginInput.addEventListener("select", () => {
+      updateCallsignCursor(false);
+    });
+
+    loginInput.addEventListener("focus", () => {
+      if (callsignCursor) {
+        callsignCursor.classList.remove("blurred");
+      }
+      updateCallsignCursor(false);
+    });
+
+    loginInput.addEventListener("blur", () => {
+      if (callsignCursor) {
+        callsignCursor.classList.add("blurred");
+      }
+    });
+
+    window.addEventListener("resize", () => {
+      updateCallsignCursor(false);
+    });
+
+    if (document.fonts) {
+      document.fonts.ready.then(() => {
+        updateCallsignCursor(false);
+      });
+    }
 
     function confirmCallsign() {
       const call = storage.setCallsign(loginInput.value);

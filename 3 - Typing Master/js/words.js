@@ -47,15 +47,15 @@ const WORDS_MODE_3 = [
 ];
 
 const WORDS_MODE_4 = [
-  "[tank-01]", "(8+9)", "{cmd-9}", "!alert!", "#fire*", "<lock#>", "[mk-4]",
-  "(4*3)", "[grid_8]", "!threat!", "{code:9}", "[target-x]", "$bounty$", "<t-90>",
-  "(12-5)", "[core.sys]", "*strike*", "!danger!", "#status_ok#", "<echo/3>",
-  "[def-99]", "{run_01}", "(99+1)", "[ping#2]", "!breach!", "<shield.v2>",
-  "[base_07]", "{lock:on}", "*blitz*", "#apex-1#", "[unit_44]", "<overkill!>",
-  "(36/6)", "{kill_99}", "[armor+5]", "!launch!", "#reboot#", "<tread-x>",
-  "(7*8)", "[zero_day]", "{mod+4}", "!critical!", "*omega*", "[alpha#1]",
-  "<radar:on>", "{freq.9}", "[hostile#]", "!strike-1!", "$cash*2$", "(15+25)",
-  "[p-38]", "{ammo:max}", "<squad-4>", "!scramble!", "#vector-0#", "[blast*3]"
+  "[Tank-01]", "(8+9)", "{CMD-9}", "!Alert!", "#Fire*", "<Lock#>", "[MK-4]",
+  "(4*3)", "[Grid_8]", "!Threat!", "{Code:9}", "[Target-X]", "$Bounty$", "<T-90>",
+  "(12-5)", "[Core.Sys]", "*Strike*", "!Danger!", "#Status_OK#", "<Echo/3>",
+  "[Def-99]", "{Run_01}", "(99+1)", "[Ping#2]", "!Breach!", "<Shield.v2>",
+  "[Base_07]", "{Lock:ON}", "*Blitz*", "#Apex-1#", "[Unit_44]", "<Overkill!>",
+  "(36/6)", "{Kill_99}", "[Armor+5]", "!Launch!", "#Reboot#", "<Tread-X>",
+  "(7*8)", "[Zero_Day]", "{Mod+4}", "!Critical!", "*Omega*", "[Alpha#1]",
+  "<Radar:ON>", "{Freq.9}", "[Hostile#]", "!Strike-1!", "$Cash*2$", "(15+25)",
+  "[P-38]", "{Ammo:MAX}", "<Squad-4>", "!Scramble!", "#Vector-0#", "[Blast*3]"
 ];
 
 // Fallback generator for arithmetic/symbols in Mode 3 and 4
@@ -79,7 +79,7 @@ function generateDynamicSymbolWord(mode) {
     const pair = brackets[Math.floor(Math.random() * brackets.length)];
     const symbols = ["!", "#", "$", "*", "-", "_", "+", ":", "."];
     const sym = symbols[Math.floor(Math.random() * symbols.length)];
-    const midTerms = ["cmd", "fire", "tank", "lock", "grid", "node", "aim", "def", "mk", "sub", "core", "run"];
+    const midTerms = ["Cmd", "Fire", "Tank", "Lock", "Grid", "Node", "Aim", "Def", "MK", "Sub", "Core", "Run", "Radar", "Alert", "Force"];
     const term = midTerms[Math.floor(Math.random() * midTerms.length)];
     const num = Math.floor(Math.random() * 99) + 1;
     const patterns = [
@@ -162,12 +162,11 @@ class WordExclusionManager {
 
     const existingSet = new Set(existingStartingChars);
 
-    // Filter valid words from pool
+    // Filter valid words from pool: NEVER allow duplicate starting characters on screen at the same time
     const candidates = pool.filter(word => {
       const firstChar = word.charAt(0);
       if (this.isCharExcluded(firstChar)) return false;
-      // Bonus words should ideally not collide with existing on-screen words at spawn time
-      if (isBonus && existingSet.has(firstChar)) return false;
+      if (existingSet.has(firstChar)) return false;
       return true;
     });
 
@@ -179,16 +178,28 @@ class WordExclusionManager {
       return selected;
     }
 
-    // If pool exhausted or filtered, attempt dynamic generation for Mode 3/4 or fallback
-    const dynamic = generateDynamicSymbolWord(mode);
-    if (dynamic && !this.isCharExcluded(dynamic.charAt(0))) {
-      if (isBonus) {
-        this.registerActiveBonus(dynamic.charAt(0));
+    // If pool exhausted or filtered, attempt dynamic generation for Mode 3/4 ensuring unique first character
+    for (let attempts = 0; attempts < 10; attempts++) {
+      const dynamic = generateDynamicSymbolWord(mode);
+      if (dynamic && !this.isCharExcluded(dynamic.charAt(0)) && !existingSet.has(dynamic.charAt(0))) {
+        if (isBonus) {
+          this.registerActiveBonus(dynamic.charAt(0));
+        }
+        return dynamic;
       }
-      return dynamic;
     }
 
-    // Ultimate fallback from pool without strict filter
+    // Secondary fallback: select any word from pool whose starting character is not currently on screen
+    const uncollided = pool.filter(word => !existingSet.has(word.charAt(0)));
+    if (uncollided.length > 0) {
+      const fallback = uncollided[Math.floor(Math.random() * uncollided.length)];
+      if (isBonus) {
+        this.registerActiveBonus(fallback.charAt(0));
+      }
+      return fallback;
+    }
+
+    // Ultimate fallback if screen has exhausted unique starting letters
     const fallback = pool[Math.floor(Math.random() * pool.length)];
     if (isBonus) {
       this.registerActiveBonus(fallback.charAt(0));

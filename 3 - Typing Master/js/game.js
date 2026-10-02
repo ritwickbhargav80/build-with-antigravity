@@ -53,9 +53,12 @@ class TypeTankGame {
     this.speedMultiplier = 1.0;
     this.bonusSpawnCounter = 0;
 
-    // Screen Shake
+    // Screen Shake & Tank Error Feedback
     this.screenShakeTime = 0;
     this.screenShakeIntensity = 0;
+    this.tankGlitchTime = 0;
+    this.tankShakeOffsetX = 0;
+    this.tankShakeOffsetY = 0;
 
     // Animation frame handle
     this.rafId = null;
@@ -85,8 +88,8 @@ class TypeTankGame {
 
     // Recalibrate coordinates
     this.tankX = this.width / 2;
-    this.perimeterY = this.height - 65;
-    this.tankY = this.height - 24;
+    this.perimeterY = this.height - 75;
+    this.tankY = this.height - 30;
 
     // Reposition active words proportionally if resized during play
     this.words.forEach(w => {
@@ -125,6 +128,9 @@ class TypeTankGame {
     this.baseSpeed = 0.55;
     this.speedMultiplier = 1.0;
     this.bonusSpawnCounter = 0;
+    this.tankGlitchTime = 0;
+    this.tankShakeOffsetX = 0;
+    this.tankShakeOffsetY = 0;
 
     this.resize();
     this.lastFrameTime = performance.now();
@@ -201,14 +207,57 @@ class TypeTankGame {
         this.processCharMiss();
       }
     } else {
-      // 2. Currently locked onto a word: must match next character in that specific word
+      // 2. Currently locked onto a word:
       const target = this.lockedWord;
       const expectedChar = target.text.charAt(target.typedIndex);
 
       if (charTyped === expectedChar) {
         this.processCharHit(target, charTyped);
       } else {
-        this.processCharMiss();
+        // 1. Prefix Branch Switch: Check if the player was typing for another word sharing the typed prefix
+        // (e.g. typed 'C' locking 'Crossfire', then typed 'A' for 'Caliber' -> switches to 'Caliber')
+        const currentPrefix = target.text.slice(0, target.typedIndex);
+        const prefixPlusChar = currentPrefix + charTyped;
+
+        const prefixMatches = this.words.filter(w => {
+          if (w === target || w.isBreached || w.isDestroyed) return false;
+          return w.text.startsWith(prefixPlusChar);
+        });
+
+        if (prefixMatches.length > 0) {
+          target.typedIndex = 0;
+          prefixMatches.sort((a, b) => b.y - a.y);
+          const newTarget = prefixMatches[0];
+          this.lockedWord = newTarget;
+          newTarget.typedIndex = currentPrefix.length;
+
+          if (window.soundEngine) {
+            window.soundEngine.playLockChirp();
+          }
+
+          this.processCharHit(newTarget, charTyped);
+        } else {
+          // 2. Starting Letter Switch: If player typed the starting letter of any other word on screen
+          const alternateTargets = this.words.filter(w => {
+            if (w === target || w.isBreached || w.isDestroyed) return false;
+            return w.text.charAt(0) === charTyped;
+          });
+
+          if (alternateTargets.length > 0) {
+            target.typedIndex = 0;
+            alternateTargets.sort((a, b) => b.y - a.y);
+            const newTarget = alternateTargets[0];
+            this.lockedWord = newTarget;
+
+            if (window.soundEngine) {
+              window.soundEngine.playLockChirp();
+            }
+
+            this.processCharHit(newTarget, charTyped);
+          } else {
+            this.processCharMiss();
+          }
+        }
       }
     }
 
@@ -259,10 +308,34 @@ class TypeTankGame {
     this.missedTypedChars++;
     // Reset combo
     this.combo = 1.0;
-    this.triggerScreenShake(3, 100);
+
+    // Visual Cue: High-impact tank shudder & red glitch flash
+    this.tankGlitchTime = 220; // ms duration for red glitch flash & violent shudder
+    this.triggerScreenShake(4, 120);
+
+    // Spawn error sparks around the tank core and treads
+    this.createTankErrorSparks();
 
     if (window.soundEngine) {
       window.soundEngine.playKeyError();
+    }
+  }
+
+  createTankErrorSparks() {
+    for (let i = 0; i < 9; i++) {
+      const angle = -Math.PI * 0.8 + Math.random() * Math.PI * 0.6;
+      const speed = 1.5 + Math.random() * 3.5;
+      this.particles.push({
+        x: this.tankX + (Math.random() - 0.5) * 40,
+        y: this.tankY - 6 + (Math.random() - 0.5) * 12,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        color: "#ffffff",
+        glow: "#ff2244",
+        radius: 1.5 + Math.random() * 2,
+        alpha: 1.0,
+        decay: 0.08 + Math.random() * 0.06
+      });
     }
   }
 
@@ -309,7 +382,9 @@ class TypeTankGame {
     }
 
     // Extract first letters of currently falling active words
-    const existingChars = this.words.map(w => w.text.charAt(0));
+    const existingChars = this.words
+      .filter(w => !w.isBreached && !w.isDestroyed)
+      .map(w => w.text.charAt(0));
 
     // Pick compliant word
     const text = this.exclusionManager.pickWord(this.mode, isBonus, existingChars);
@@ -666,9 +741,21 @@ class TypeTankGame {
       }
     }
 
-    // 7. Screen Shake decay
+    // 7. Screen Shake & Tank Shudder decay
     if (this.screenShakeTime > 0) {
       this.screenShakeTime -= dt;
+    }
+
+    if (this.tankGlitchTime > 0) {
+      this.tankGlitchTime -= dt;
+      // Calculate rapid lateral jitter
+      const progress = Math.max(0, this.tankGlitchTime / 220);
+      const jitterMag = 7 * progress;
+      this.tankShakeOffsetX = (Math.random() - 0.5) * 2 * jitterMag;
+      this.tankShakeOffsetY = (Math.random() - 0.5) * jitterMag * 0.6;
+    } else {
+      this.tankShakeOffsetX = 0;
+      this.tankShakeOffsetY = 0;
     }
   }
 
@@ -770,14 +857,24 @@ class TypeTankGame {
 
   drawTank(ctx) {
     ctx.save();
-    const x = this.tankX;
-    const y = this.tankY;
+    // Apply tank-specific glitch shake offset when typing error occurs
+    const isGlitching = this.tankGlitchTime > 0;
+    const x = this.tankX + this.tankShakeOffsetX;
+    const y = this.tankY + this.tankShakeOffsetY;
+
+    // Error highlight theme vs normal green phosphor theme
+    const themeGlow = isGlitching ? "#ff2244" : "#00ff66";
+    const themeStroke = isGlitching ? "#ff4466" : "#00ff66";
+    const bodyFill = isGlitching ? "#25060a" : "#061309";
+    const turretFill = isGlitching ? "#35080e" : "#081d0d";
+    const barrelFill = isGlitching ? "#2e070c" : "#0b2612";
+    const barrelStroke = isGlitching ? "#ff6688" : "#33ff77";
 
     // 1. TANK CHASSIS / TREAD BASE
-    ctx.shadowColor = "#00ff66";
-    ctx.shadowBlur = 6;
-    ctx.fillStyle = "#061309";
-    ctx.strokeStyle = "#00ff66";
+    ctx.shadowColor = themeGlow;
+    ctx.shadowBlur = isGlitching ? 14 : 6;
+    ctx.fillStyle = bodyFill;
+    ctx.strokeStyle = themeStroke;
     ctx.lineWidth = 2;
 
     const baseWidth = 84;
@@ -786,7 +883,7 @@ class TypeTankGame {
     ctx.strokeRect(x - baseWidth / 2, y, baseWidth, baseHeight);
 
     // Tread notches
-    ctx.fillStyle = "#00ff66";
+    ctx.fillStyle = themeStroke;
     for (let tx = x - baseWidth / 2 + 6; tx < x + baseWidth / 2 - 4; tx += 9) {
       ctx.fillRect(tx, y + 2, 4, baseHeight - 4);
     }
@@ -800,14 +897,14 @@ class TypeTankGame {
     const barrelWidth = 10;
 
     // Barrel body
-    ctx.fillStyle = "#0b2612";
-    ctx.strokeStyle = "#33ff77";
+    ctx.fillStyle = barrelFill;
+    ctx.strokeStyle = barrelStroke;
     ctx.lineWidth = 1.5;
     ctx.fillRect(0, -barrelWidth / 2, barrelLength, barrelWidth);
     ctx.strokeRect(0, -barrelWidth / 2, barrelLength, barrelWidth);
 
     // Muzzle brake ring
-    ctx.fillStyle = "#00ff66";
+    ctx.fillStyle = themeStroke;
     ctx.fillRect(barrelLength - 6, -barrelWidth / 2 - 2, 6, barrelWidth + 4);
 
     ctx.restore();
@@ -816,24 +913,35 @@ class TypeTankGame {
     ctx.beginPath();
     ctx.arc(x, y, 26, Math.PI, 0, false);
     ctx.closePath();
-    ctx.fillStyle = "#081d0d";
+    ctx.fillStyle = turretFill;
     ctx.fill();
     ctx.stroke();
 
     // Armor rivets & hatch
     ctx.beginPath();
     ctx.arc(x, y - 10, 8, Math.PI, 0, false);
-    ctx.fillStyle = "#00ff66";
+    ctx.fillStyle = themeStroke;
     ctx.fill();
 
     // Status core light
-    const coreColor = this.hull > 50 ? "#00ff66" : (this.hull > 25 ? "#ffb000" : "#ff2244");
+    const coreColor = isGlitching ? "#ff2244" : (this.hull > 50 ? "#00ff66" : (this.hull > 25 ? "#ffb000" : "#ff2244"));
     ctx.shadowColor = coreColor;
-    ctx.shadowBlur = 10;
+    ctx.shadowBlur = isGlitching ? 16 : 10;
     ctx.fillStyle = coreColor;
     ctx.beginPath();
-    ctx.arc(x, y - 4, 4, 0, Math.PI * 2);
+    ctx.arc(x, y - 4, isGlitching ? 6 : 4, 0, Math.PI * 2);
     ctx.fill();
+
+    // Visual warning tag cleanly positioned at base below the tank when misfiring
+    if (isGlitching) {
+      ctx.font = "8px 'Press Start 2P', monospace";
+      ctx.fillStyle = "#ff3355";
+      ctx.shadowColor = "#ff2244";
+      ctx.shadowBlur = 8;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillText("! MISFIRE !", x, y + baseHeight + 3);
+    }
 
     ctx.restore();
   }
@@ -920,24 +1028,30 @@ class TypeTankGame {
         ctx.lineTo(boxX + boxW, boxY + boxH - cLen);
         ctx.stroke();
 
-        // Lock tag
-        ctx.font = "9px 'Press Start 2P', monospace";
-        ctx.textAlign = "left";
+        // Lock tag centered clearly ABOVE the reticle box
+        ctx.font = "8px 'Press Start 2P', monospace";
+        ctx.textAlign = "center";
         ctx.fillStyle = word.isBonus ? "#ff2244" : "#00ff66";
-        ctx.fillText("TARGET LOCKED", boxX, boxY - 4);
+        ctx.fillText("[LOCKED]", word.x, boxY - 5);
 
         ctx.restore();
       }
 
-      // 2. Draw bonus aura if Crimson Bonus target
+      // 2. Draw bonus aura & bonus label if Crimson Bonus target
       if (word.isBonus) {
         ctx.save();
         ctx.fillStyle = "rgba(255, 34, 68, 0.12)";
         ctx.fillRect(startX - 6, word.y - 12, totalWidth + 12, 24);
+
+        // Place 3.5X BONUS centered BELOW the word/box so it never collides with [LOCKED] above
         ctx.font = "8px 'Press Start 2P', monospace";
-        ctx.textAlign = "left";
+        ctx.textAlign = "center";
         ctx.fillStyle = "#ff3355";
-        ctx.fillText("3.5X BONUS", startX, word.y - 18);
+        ctx.shadowColor = "#ff2244";
+        ctx.shadowBlur = 6;
+        const bonusY = isLocked ? (word.y + 24) : (word.y + 20);
+        ctx.fillText("★ 3.5X BONUS ★", word.x, bonusY);
+
         ctx.restore();
       }
 

@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <!-- Phosphor green glow filter -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="1.5" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    <radialGradient id="crt-bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0a2614" />
+      <stop offset="85%" stop-color="#041208" />
+      <stop offset="100%" stop-color="#010603" />
+    </radialGradient>
+    <linearGradient id="armor-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#33ff33" />
+      <stop offset="100%" stop-color="#00aa44" />
+    </linearGradient>
+  </defs>
+
+  <!-- Arcade CRT Screen Bezel Base -->
+  <rect x="2" y="2" width="60" height="60" rx="12" fill="url(#crt-bg)" stroke="#00ff66" stroke-width="2.2" stroke-opacity="0.9" />
+  
+  <!-- Subtle CRT Scanlines -->
+  <line x1="4" y1="12" x2="60" y2="12" stroke="#00ff66" stroke-width="0.75" stroke-opacity="0.15" />
+  <line x1="4" y1="20" x2="60" y2="20" stroke="#00ff66" stroke-width="0.75" stroke-opacity="0.15" />
+  <line x1="4" y1="28" x2="60" y2="28" stroke="#00ff66" stroke-width="0.75" stroke-opacity="0.15" />
+  <line x1="4" y1="36" x2="60" y2="36" stroke="#00ff66" stroke-width="0.75" stroke-opacity="0.15" />
+  <line x1="4" y1="44" x2="60" y2="44" stroke="#00ff66" stroke-width="0.75" stroke-opacity="0.15" />
+  <line x1="4" y1="52" x2="60" y2="52" stroke="#00ff66" stroke-width="0.75" stroke-opacity="0.15" />
+
+  <!-- Ballistic Radar Crosshair Arcs -->
+  <circle cx="28" cy="38" r="22" fill="none" stroke="#00ff66" stroke-width="0.75" stroke-dasharray="2,3" stroke-opacity="0.25" />
+  <circle cx="28" cy="38" r="14" fill="none" stroke="#00ff66" stroke-width="0.75" stroke-dasharray="2,2" stroke-opacity="0.3" />
+
+  <!-- Ballistic Tank with Glow -->
+  <g filter="url(#glow)">
+    <!-- Elevated Ballistic Cannon Barrel -->
+    <path d="M 28 34 L 46 16" stroke="#33ff33" stroke-width="3.8" stroke-linecap="round" />
+    <!-- Muzzle Brake -->
+    <path d="M 43 14 L 48 19" stroke="#aaffaa" stroke-width="2.8" stroke-linecap="square" />
+    
+    <!-- Ballistic Muzzle Flash / Energy Shell -->
+    <circle cx="51" cy="11" r="2.5" fill="#ffffff" />
+    <circle cx="51" cy="11" r="4.5" fill="none" stroke="#33ff33" stroke-width="1.2" stroke-opacity="0.85" />
+    <circle cx="56" cy="6" r="1.5" fill="#33ff33" />
+
+    <!-- Tank Turret Dome -->
+    <path d="M 21 37 C 21 29, 35 29, 35 37 Z" fill="url(#armor-grad)" stroke="#33ff33" stroke-width="1.2" />
+    <!-- Commander Hatch / Cupola -->
+    <rect x="25" y="28" width="6" height="2.2" rx="1" fill="#aaffaa" />
+
+    <!-- Tank Hull / Armored Body -->
+    <polygon points="14,44 19,37 37,37 42,44" fill="#00aa44" stroke="#33ff33" stroke-width="1.5" />
+    <!-- Hull Slit Detail -->
+    <line x1="22" y1="41" x2="34" y2="41" stroke="#021408" stroke-width="1.5" />
+
+    <!-- Caterpillar Tracks / Treads -->
+    <rect x="11" y="44" width="34" height="9.5" rx="4.75" fill="#04160a" stroke="#33ff33" stroke-width="1.5" />
+    <!-- Track Road Wheels & Axles -->
+    <circle cx="16" cy="48.7" r="2.5" fill="#00ff66" />
+    <circle cx="23" cy="48.7" r="2.5" fill="#00ff66" />
+    <circle cx="30" cy="48.7" r="2.5" fill="#00ff66" />
+    <circle cx="37" cy="48.7" r="2.5" fill="#00ff66" />
+    <circle cx="16" cy="48.7" r="1" fill="#021408" />
+    <circle cx="23" cy="48.7" r="1" fill="#021408" />
+    <circle cx="30" cy="48.7" r="1" fill="#021408" />
+    <circle cx="37" cy="48.7" r="1" fill="#021408" />
+  </g>
+</svg>
